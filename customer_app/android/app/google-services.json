@@ -7,15 +7,15 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:475393900267:android:9d42ed09ef668ff41e48ae",
+        "mobilesdk_app_id": "1:475393900267:android:9d42ed09ef668ff41e48a",
         "android_client_info": {
-          "package_name": "com.rgcreators_parlour.customer_app"
+          "package_name": "com.rgcreators_parlour.customer"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDTG3SoduSy8zOgUzSptAkIegvn9QyxcOA"
+          "current_key": " "
         }
       ],
       "services": {
@@ -28,13 +28,13 @@
       "client_info": {
         "mobilesdk_app_id": "1:475393900267:android:9d42ed09ef668ff41e48ae",
         "android_client_info": {
-          "package_name": "com.rgcreators_parlour.owner_app"
+          "package_name": "com.rgcreators_parlour"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDTG3SoduSy8zOgUzSptAkIegvn9QyxcOA"
+          "current_key": "AA"
         }
       ],
       "services": {
