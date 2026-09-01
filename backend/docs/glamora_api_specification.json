@@ -1,0 +1,483 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Glamora Multi-Tenant Barber & Salon SaaS API Specification",
+    "description": "Comprehensive REST API specification for Glamora - Monolithic Multi-Tenant SaaS platform for Barber & Salon Booking. Includes Auth, Business Onboarding, Discovery, Concurrency Booking Engine, ₹1 SaaS Ledger, Marketing/CRM, Payment Webhooks, and Admin Security Controls.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Glamora Engineering Team",
+      "email": "ronitgoswami453@gmail.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8000/api",
+      "description": "Local Development Server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/auth/login": {
+      "post": {
+        "summary": "Authenticate User & Issue Bearer Token",
+        "description": "Validates email and password credentials. Checks if user account is banned. Captures login IP address and returns a Sanctum Bearer token.",
+        "tags": ["Authentication"],
+        "security": [],
+        "x-security-measures": [
+          "Rate Limited: 10 requests per minute",
+          "Account Suspension Check: Intercepts banned users with 403 Forbidden",
+          "Security Headers: X-Frame-Options DENY, X-Content-Type-Options nosniff",
+          "IP Tracking: Captures last_login_ip in database"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "ronitgoswami453@gmail.com" },
+                  "password": { "type": "string", "format": "password", "example": "Password@2426" },
+                  "device_name": { "type": "string", "example": "Android App Device" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication Successful",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Authentication successful.",
+                  "access_token": "1|sanctum_token_string_here",
+                  "token_type": "Bearer",
+                  "user": {
+                    "id": 1,
+                    "name": "Ronit Goswami",
+                    "email": "ronitgoswami453@gmail.com",
+                    "roles": ["SUPER_ADMIN"],
+                    "tenant_id": null
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "The provided credentials do not match our records."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "User Banned / Suspended",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Account is suspended.",
+                  "banned_reason": "Manually blocked by administration."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "The email field is required.",
+                  "errors": { "email": ["The email field is required."] }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "summary": "Register New Customer Account",
+        "description": "Creates a new user with the CUSTOMER role and returns an authentication token.",
+        "tags": ["Authentication"],
+        "security": [],
+        "x-security-measures": [
+          "Rate Limited: 10 requests per minute",
+          "Strict Input Validation: Unique email enforcement",
+          "Password Hashing: Bcrypt hashing"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "example": "Alex Smith" },
+                  "email": { "type": "string", "format": "email", "example": "customer@glamora.com" },
+                  "password": { "type": "string", "format": "password", "example": "password" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registration Successful",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "User registered successfully.",
+                  "access_token": "2|sanctum_token_string",
+                  "token_type": "Bearer",
+                  "user": {
+                    "id": 5,
+                    "name": "Alex Smith",
+                    "email": "customer@glamora.com",
+                    "roles": ["CUSTOMER"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/discovery/nearby": {
+      "get": {
+        "summary": "Discover Nearby Active Salons",
+        "description": "Public search endpoint to fetch verified active salon branches in a specific city.",
+        "tags": ["Discovery"],
+        "security": [],
+        "x-security-measures": [
+          "Rate Limited: 60 requests per minute",
+          "Status Filtering: Only returns branches of ACTIVE tenants"
+        ],
+        "parameters": [
+          { "name": "city", "in": "query", "required": false, "schema": { "type": "string", "example": "New Delhi" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Nearby Salons",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "count": 1,
+                  "data": [
+                    {
+                      "id": 1,
+                      "tenant_id": 1,
+                      "name": "Main Downtown Branch",
+                      "address": "Connaught Place",
+                      "city": "New Delhi",
+                      "state": "Delhi",
+                      "pin_code": "110001",
+                      "tenant": {
+                        "id": 1,
+                        "business_name": "The Grooming Lounge",
+                        "business_type": "Barbershop",
+                        "status": "ACTIVE"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/business/onboard": {
+      "post": {
+        "summary": "Onboard Salon Tenant & Create Owner",
+        "description": "Creates a new salon business tenant, default branch location, and provisions the shop owner account.",
+        "tags": ["Business Management"],
+        "x-security-measures": [
+          "Sanctum Bearer Token Required",
+          "Tenant Scope Isolation: Assigns tenant_id to user"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["business_name", "business_type", "owner_name", "email", "password", "branch_name", "city"],
+                "properties": {
+                  "business_name": { "type": "string", "example": "Luxe Barber Lounge" },
+                  "business_type": { "type": "string", "example": "Barbershop" },
+                  "owner_name": { "type": "string", "example": "David Miller" },
+                  "email": { "type": "string", "format": "email", "example": "owner2@glamora.com" },
+                  "password": { "type": "string", "example": "Password@2426" },
+                  "branch_name": { "type": "string", "example": "Central Branch" },
+                  "city": { "type": "string", "example": "Mumbai" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Business Onboarded Successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Salon tenant onboarded successfully.",
+                  "tenant": { "id": 2, "business_name": "Luxe Barber Lounge", "status": "VERIFIED" },
+                  "branch": { "id": 2, "name": "Central Branch", "city": "Mumbai" },
+                  "owner": { "id": 10, "name": "David Miller", "email": "owner2@glamora.com" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/booking/slots/check": {
+      "post": {
+        "summary": "Dynamic Slot Availability Calculator",
+        "description": "Calculates available 30-minute booking time slots for a specific stylist, service, and date.",
+        "tags": ["Booking Engine"],
+        "x-security-measures": [
+          "Sanctum Bearer Token Required",
+          "Working Hour & Holiday Evaluation",
+          "Concurrency Slot Collision Filtering"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["service_id", "staff_id", "date"],
+                "properties": {
+                  "service_id": { "type": "integer", "example": 1 },
+                  "staff_id": { "type": "integer", "example": 1 },
+                  "date": { "type": "string", "format": "date", "example": "2026-08-12" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Available Slots Calculated",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "available_slots": [
+                    { "time": "09:00", "available": true },
+                    { "time": "09:30", "available": true },
+                    { "time": "10:00", "available": false }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/booking/lock": {
+      "post": {
+        "summary": "Lock Time Slot (5-Minute Pessimistic Lock)",
+        "description": "Locks a selected time slot for 5 minutes during checkout to prevent double-booking collisions.",
+        "tags": ["Booking Engine"],
+        "x-security-measures": [
+          "Sanctum Bearer Token Required",
+          "Pessimistic Concurrency Lock: 5-minute TTL",
+          "Returns 409 Conflict if slot is locked by another user"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["branch_id", "service_id", "staff_id", "date", "time"],
+                "properties": {
+                  "branch_id": { "type": "integer", "example": 1 },
+                  "service_id": { "type": "integer", "example": 1 },
+                  "staff_id": { "type": "integer", "example": 1 },
+                  "date": { "type": "string", "format": "date", "example": "2026-08-12" },
+                  "time": { "type": "string", "example": "10:00" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Slot Locked Successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "id": 101,
+                    "status": "LOCKED",
+                    "lock_expires_at": "2026-08-12T10:05:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Time Slot Collision Conflict",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Time slot is no longer available."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/booking/confirm": {
+      "post": {
+        "summary": "Confirm Booking & Log ₹1 SaaS Fee",
+        "description": "Confirms a locked booking and automatically logs a ₹1.00 debit entry into the salon's Glamora SaaS commission ledger.",
+        "tags": ["Booking Engine", "SaaS Billing"],
+        "x-security-measures": [
+          "Sanctum Bearer Token Required",
+          "Automated ₹1 SaaS Commission Ledger Debit Entry",
+          "Lock Expiration Validation"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["booking_id"],
+                "properties": {
+                  "booking_id": { "type": "integer", "example": 101 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Booking Confirmed & Fee Logged",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "id": 101,
+                    "status": "CONFIRMED",
+                    "payment_status": "PAID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/webhook": {
+      "post": {
+        "summary": "Idempotent Payment Gateway Webhook",
+        "description": "Processes payment capture events from Stripe/Razorpay, confirms booking status, and logs ₹1 SaaS fee.",
+        "tags": ["Payment Gateway", "SaaS Billing"],
+        "security": [],
+        "x-security-measures": [
+          "HMAC Webhook Signature Verification",
+          "Idempotency Guard",
+          "Automated ₹1 SaaS Fee Debit Entry"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["booking_id", "event"],
+                "properties": {
+                  "booking_id": { "type": "integer", "example": 101 },
+                  "event": { "type": "string", "example": "payment.captured" },
+                  "payment_id": { "type": "string", "example": "pay_rzp_98765" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook Processed",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Payment webhook processed and ₹1 fee logged."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketing/crm/customers": {
+      "get": {
+        "summary": "Get Owner CRM Customer Analytics",
+        "description": "Returns customer retention, booking count, and total spend analytics for the salon tenant.",
+        "tags": ["Marketing & CRM"],
+        "x-security-measures": [
+          "Sanctum Bearer Token Required",
+          "Tenant Scope Isolation: Restricted to authenticated user's tenant_id"
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer Analytics Data",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "count": 1,
+                  "data": [
+                    {
+                      "id": 5,
+                      "name": "Test Customer",
+                      "email": "customer@glamora.com",
+                      "total_bookings": 2,
+                      "total_spent": 750.00
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Sanctum Token"
+      }
+    }
+  }
+}

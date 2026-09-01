@@ -1,0 +1,26 @@
+========================================================================
+🚀 STARTING COMPREHENSIVE END-TO-END APPLICATION FEATURE TEST SUITE
+========================================================================
+
+
+   Illuminate\Database\QueryException 
+
+  SQLSTATE[42S22]: Column not found: 1054 Unknown column 'role' in 'where clause' (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: glamora_saas, SQL: select * from `users` where `role` = CUSTOMER limit 1)
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:857
+    853▕             $exceptionType = ($isUniqueConstraintError = $this->isUniqueConstraintError($e))
+    854▕                 ? UniqueConstraintViolationException::class
+    855▕                 : QueryException::class;
+    856▕ 
+  ➜ 857▕             $exception = new $exceptionType(
+    858▕                 $this->getNameWithReadWriteType(),
+    859▕                 $query,
+    860▕                 $this->prepareBindings($bindings),
+    861▕                 $e,
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:435
+      PDOException::("SQLSTATE[42S22]: Column not found: 1054 Unknown column 'role' in 'where clause'")
+
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:435
+      PDO::prepare("select * from `users` where `role` = ? limit 1")
+

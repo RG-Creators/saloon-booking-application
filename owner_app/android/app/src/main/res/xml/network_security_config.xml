@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network Security Config for Bookify Partner (development).
+  Allows cleartext HTTP traffic to the local Laravel dev server.
+  In production, remove the domain-config and use HTTPS only.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Your PC's LAN IP running Laravel artisan serve -->
+        <domain includeSubdomains="false">10.21.170.176</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false">
+        <!-- All other traffic must use HTTPS -->
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

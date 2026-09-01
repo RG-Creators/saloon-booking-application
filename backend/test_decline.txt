@@ -1,0 +1,22 @@
+
+   Illuminate\Database\Eloquent\RelationNotFoundException 
+
+  Call to undefined relationship [user] on model [App\Models\Booking].
+
+  at vendor\laravel\framework\src\Illuminate\Database\Eloquent\RelationNotFoundException.php:35
+     31▕     public static function make($model, $relation, $type = null)
+     32▕     {
+     33▕         $class = get_class($model);
+     34▕ 
+  ➜  35▕         $instance = new static(
+     36▕             is_null($type)
+     37▕                 ? "Call to undefined relationship [{$relation}] on model [{$class}]."
+     38▕                 : "Call to undefined relationship [{$relation}] on model [{$class}] of type [{$type}].",
+     39▕         );
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:975
+      Illuminate\Database\Eloquent\RelationNotFoundException::make(Object(App\Models\Booking), "user")
+
+  2   vendor\laravel\framework\src\Illuminate\Database\Eloquent\Relations\Relation.php:155
+      Illuminate\Database\Eloquent\Builder::Illuminate\Database\Eloquent\{closure}()
+
